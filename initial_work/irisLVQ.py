@@ -19,13 +19,3 @@ print(classification_report(y_test, y_pred))
 
 cm = confusion_matrix(y_test, y_pred)
 print(cm)
-a = [1, 2, 3, 4]
-a = np.array(a)
-a = a.reshape(-1, 1)
-
-# import numpy as np
-
-# a = np.array([5, 2, 7, 1, 8])
-# idx_second_largest = a.argsort()[-2]
-# print(idx_second_largest)
-

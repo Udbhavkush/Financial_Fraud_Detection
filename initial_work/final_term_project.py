@@ -9,6 +9,7 @@ from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
+from sklearn.metrics import roc_auc_score, roc_curve
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -41,6 +42,10 @@ len(df_fraud)
 print('types observed in the fraudulent activities with their counts:')
 print(df_fraud['type'].value_counts())
 
+sns.countplot(x="type", hue='isFraud', data=df)
+plt.title("histogram of different types with frequency of fraudulent activities")
+plt.tight_layout()
+plt.show()
 # df = pd.get_dummies(df, columns=["type"]) # one hot encoding for the 'type' column
 
 
@@ -51,6 +56,10 @@ df['type'] = le.fit_transform(df['type'])
 X = df.drop(columns=["isFraud"])
 y = df["isFraud"]
 
+sns.countplot(x='isFraud', data=df)
+plt.title("An estimate of Imbalance in the dataset")
+plt.tight_layout()
+plt.show()
 # Instantiate SMOTE
 smote = SMOTE(random_state=4)
 # reference: https://imbalanced-learn.org/stable/references/generated/imblearn.over_sampling.SMOTE.html#imblearn.over_sampling.SMOTE.fit_resample
@@ -101,6 +110,9 @@ cm = confusion_matrix(y_test, y_pred)
 print(cm)
 cf = classification_report(y_test, y_pred)
 print(cf)
+auc_lr = roc_auc_score(y_test, y_pred)
+fpr, tpr, _ = roc_curve(y_test, y_pred)
+
 
 # # Precision: the ratio of true positives to the total number of predicted positives.
 # # Recall: the ratio of true positives to the total number of actual positives.
@@ -108,10 +120,9 @@ print(cf)
 clf = DecisionTreeClassifier(random_state=4)
 clf.fit(X_train, y_train)
 
-# Make predictions on the testing set
+
 y_pred = clf.predict(X_test)
 
-# Evaluate the performance of the model
 print('Results for Decision Tree:')
 print(confusion_matrix(y_test, y_pred))
 print(classification_report(y_test, y_pred))
@@ -119,42 +130,63 @@ print(classification_report(y_test, y_pred))
 clf = DecisionTreeClassifier(random_state=4)
 clf.fit(X_train, y_train)
 
-# Predict on the test set
+
 y_pred = clf.predict(X_test)
+auc_dt = roc_auc_score(y_test, y_pred)
+fpr2, tpr2, _ = roc_curve(y_test, y_pred)
 
-k_values = list(range(1, 15))
 
-precisions = []
-for k in k_values:
-    knn = KNeighborsClassifier(n_neighbors=k)
-    knn.fit(X_train, y_train)
-    y_pred = knn.predict(X_test)
-    precision = precision_score(y_test, y_pred)
-    precisions.append(precision)
-
-# Plot the results
-print('KNN Results:')
-plt.plot(k_values, precisions)
-plt.xlabel('k')
-plt.ylabel('Precision')
-plt.title('KNN Precision vs. k')
-plt.show()
-print('Best precision using KNN when k = 2:', precisions[1])
-# we get the maximum precision at k=2
-knn = KNeighborsClassifier(n_neighbors=2)
-knn.fit(X_train, y_train)
-y_pred = knn.predict(X_test)
-cm = confusion_matrix(y_test, y_pred)
-print(cm)
-
-print('LVQ RUNNING!')
-lv = LVQ(0.0001, 20)
-lv.fit(X_train, y_train)
-y_pred = lv.predict(X_test)
-precision = lv.score(y_test, y_pred)
-
-print('LVQ classification:')
-print(classification_report(y_test, y_pred))
-
-cm = confusion_matrix(y_test, y_pred)
-print(cm)
+# k_values = list(range(1, 15))
+#
+# precisions = []
+# for k in k_values:
+#     knn = KNeighborsClassifier(n_neighbors=k)
+#     knn.fit(X_train, y_train)
+#     y_pred = knn.predict(X_test)
+#     precision = precision_score(y_test, y_pred)
+#     precisions.append(precision)
+#
+# # Plot the results
+# print('KNN Results:')
+# plt.plot(k_values, precisions)
+# plt.xlabel('k')
+# plt.ylabel('Precision')
+# plt.title('KNN Precision vs. k')
+# plt.show()
+# print('Best precision using KNN when k = 2:', precisions[1])
+# # we get the maximum precision at k=2
+# knn = KNeighborsClassifier(n_neighbors=2)
+# knn.fit(X_train, y_train)
+# y_pred = knn.predict(X_test)
+# cm = confusion_matrix(y_test, y_pred)
+# print(cm)
+#
+# auc_knn = roc_auc_score(y_test, y_pred)
+# fpr3, tpr3, _ = roc_curve(y_test, y_pred)
+#
+#
+# print('LVQ RUNNING!')
+# lv = LVQ(0.0001, 20)
+# lv.fit(X_train, y_train)
+# y_pred = lv.predict(X_test)
+# precision = lv.score(y_test, y_pred)
+#
+# print('LVQ classification:')
+# print(classification_report(y_test, y_pred))
+#
+# cm = confusion_matrix(y_test, y_pred)
+# print(cm)
+#
+# auc_lvq = roc_auc_score(y_test, y_pred)
+# fpr4, tpr4, _ = roc_curve(y_test, y_pred)
+#
+# plt.plot(fpr4, tpr4, label=f"LVQ = {auc_lvq:.2f}")
+# plt.plot(fpr3, tpr3, label=f"KNN = {auc_knn:.2f}")
+# plt.plot(fpr2, tpr2, label=f"DT = {auc_dt:.2f}")
+# plt.plot(fpr, tpr, label=f"LR = {auc_lr:.2f}")
+# plt.plot([0, 1], [0, 1], linestyle="--", color="grey")
+# plt.title('Comparing performances of different models')
+# plt.xlabel("False Positive Rate")
+# plt.ylabel("True Positive Rate")
+# plt.legend(loc="lower right")
+# plt.show()
