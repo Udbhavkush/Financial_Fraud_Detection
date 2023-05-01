@@ -148,7 +148,7 @@ cm = confusion_matrix(y_test, y_pred)
 print(cm)
 
 print('LVQ RUNNING!')
-lv = LVQ(0.0001, 10)
+lv = LVQ(0.0001, 20)
 lv.fit(X_train, y_train)
 y_pred = lv.predict(X_test)
 precision = lv.score(y_test, y_pred)
