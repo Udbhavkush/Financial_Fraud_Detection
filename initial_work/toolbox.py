@@ -59,3 +59,32 @@ def distance(v):
 
     return sum_squares**0.5
 
+
+# def LVQ(X):
+#     # since, there are two classes i.e. fraud and not fraud
+#     # so, second layer will have two neurons.
+#     w2 = [[1, 0],
+#           [0, 1]]
+#     w2 = np.array(w2)
+#
+#     # for trying, I am taking just two neurons in the first layer
+#     w1 = np.random.rand(2, len(X.iloc[0, :]))
+#
+#     epochs = 1
+#
+#     for epoch in range(epochs):
+#         print('epoch = ', epoch)
+#         for i in range(len(X)):
+#             p_temp = np.array(X.iloc[i, :]).reshape(-1, 1)
+#             temp_arr = np.zeros((w1.shape[0]))
+#             for j in range(w1.shape[0]):
+#                 temp_arr[j] = -distance(w1[j].reshape(-1, 1) - p_temp)
+#
+#             a1 = activation_func('compet', temp_arr)
+#             a2 = w2 @ a1.reshape(-1, 1)
+#             winner_neuron = np.argmax(a1)  # ref: https://numpy.org/doc/stable/reference/generated/numpy.argmax.html
+#             w1[winner_neuron] += 0.5 * (p_temp.ravel() - w1[winner_neuron])
+#
+#     print(w1)
+#
+

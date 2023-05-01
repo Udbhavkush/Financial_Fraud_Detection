@@ -4,8 +4,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 from toolbox import *
+from lvq import LVQ
 from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -31,7 +34,7 @@ print(df.columns)
 # tells us that they can be potential fraudulent activities they are needed
 # for further investigation. But, for this model, we are not concerned with that aspect.
 
-df = df.drop(['isFlaggedFraud'], axis=1)
+df = df.drop(['isFlaggedFraud', 'step'], axis=1)
 
 df_fraud = df[df['isFraud'] == 1]
 len(df_fraud)
@@ -54,6 +57,7 @@ smote = SMOTE(random_state=4)
 # Upsample the minority class
 X_resampled, y_resampled = smote.fit_resample(X, y)
 
+
 df_resampled = X_resampled.copy()
 df_resampled['isFraud'] = y_resampled
 print(df_resampled['isFraud'].value_counts())
@@ -63,14 +67,18 @@ print(df_resampled['isFraud'].value_counts())
 # so upsampling of the data is done using SMOTE
 
 # applying logistic regression
-X_train, X_test, y_train, y_test = train_test_split(X_resampled, y_resampled, test_size=0.2, random_state=4)
+X_train, X_test, y_train, y_test = train_test_split(X_resampled, y_resampled, test_size=0.3, shuffle=True)
 
+scaler = StandardScaler()
+scaler.fit(X_resampled)
+X_train_scaled = scaler.transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 # Fit a logistic regression model
 lr = LogisticRegression(random_state=4)
-lr.fit(X_train, y_train)
+lr.fit(X_train_scaled, y_train)
 
 # Predict on the test set
-y_pred = lr.predict(X_test)
+y_pred = lr.predict(X_test_scaled)
 
 # Print the classification report and confusion matrix
 print('Results for logistic regression:')
@@ -80,38 +88,20 @@ print(cm)
 cf = classification_report(y_test, y_pred)
 print(cf)
 
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=4)
-#
-# # Fit a logistic regression model
-# lr = LogisticRegression(random_state=4)
-# lr.fit(X_train, y_train)
-#
-# # Predict on the test set
-# y_pred = lr.predict(X_test)
-#
-# # Print the classification report and confusion matrix
-# print('Results for logistic regression before upsampling:')
-# cf2 = classification_report(y_test, y_pred)
-# print(cf2)
-# cm2 = confusion_matrix(y_test, y_pred)
-# print(cm2)
-
-# Precision: the ratio of true positives to the total number of predicted positives.
-# Recall: the ratio of true positives to the total number of actual positives.
-
+# # Precision: the ratio of true positives to the total number of predicted positives.
+# # Recall: the ratio of true positives to the total number of actual positives.
 
 clf = DecisionTreeClassifier(random_state=4)
-clf.fit(X_train, y_train)
+clf.fit(X_train_scaled, y_train)
 
 # Make predictions on the testing set
-y_pred = clf.predict(X_test)
+y_pred = clf.predict(X_test_scaled)
 
 # Evaluate the performance of the model
 print('Results for Decision Tree:')
 print(confusion_matrix(y_test, y_pred))
 print(classification_report(y_test, y_pred))
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=4)
 clf = DecisionTreeClassifier(random_state=4)
 clf.fit(X_train, y_train)
 
@@ -120,7 +110,6 @@ y_pred = clf.predict(X_test)
 
 k_values = list(range(1, 31))
 
-# Train a KNN model for each value of k and store the precision score
 precisions = []
 for k in k_values:
     knn = KNeighborsClassifier(n_neighbors=k)
@@ -130,9 +119,28 @@ for k in k_values:
     precisions.append(precision)
 
 # Plot the results
+print('KNN Results:')
 plt.plot(k_values, precisions)
 plt.xlabel('k')
 plt.ylabel('Precision')
 plt.title('KNN Precision vs. k')
 plt.show()
+print('Best precision using KNN when k = 2:', precisions[1])
 # we get the maximum precision at k=2
+knn = KNeighborsClassifier(n_neighbors=2)
+knn.fit(X_train_scaled, y_train)
+y_pred = knn.predict(X_test_scaled)
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+
+lv = LVQ(0.0001, 10)
+lv.fit(X_train_scaled, y_train)
+y_pred = lv.predict(X_test_scaled)
+precision = lv.score(y_test, y_pred)
+
+print('LVQ classification:')
+print(classification_report(y_test, y_pred))
+
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
