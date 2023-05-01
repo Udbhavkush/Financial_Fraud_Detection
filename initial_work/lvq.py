@@ -54,6 +54,9 @@ class LVQ(object):
     def __init__(self, alpha=0.01, epochs=20):
         self.alpha = alpha
         self.epochs = epochs
+        # w2 = [[1, 0, 0],
+        #       [0, 1, 0],
+        #       [0, 0, 1]]
         w2 = [[1, 0],
               [0, 1]]
 
@@ -62,6 +65,7 @@ class LVQ(object):
         # Tried different s1 values but s1=2 worked best for this problem
 
     def fit(self, X, y):
+        y = pd.Series(y)
         X = np.array(X)
         self.w1 = np.random.rand(2, len(X[0, :]))
         for epoch in range(self.epochs):
@@ -81,7 +85,21 @@ class LVQ(object):
                     self.w1[winner_neuron] += self.alpha * (p_temp.ravel() - self.w1[winner_neuron])
                 else:
                     self.w1[winner_neuron] -= self.alpha * (p_temp.ravel() - self.w1[winner_neuron])
-            print(self.w1)
+                    k = len(temp_arr)-1
+                    while True:
+                        a1 = np.zeros(temp_arr.shape)
+                        ele = temp_arr.argsort()[k]
+                        a1[ele] = 1
+                        a2 = self.w2 @ a1.reshape(-1, 1)
+                        out = np.argmax(a2)
+                        if out == y.iloc[i]:
+                            self.w1[ele] += self.alpha * (p_temp.ravel() - self.w1[ele])
+                            break
+                        else:
+                            k -= 1
+
+
+            # print(self.w1)
         return self
 
     def predict(self, X):

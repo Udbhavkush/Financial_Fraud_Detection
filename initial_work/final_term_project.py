@@ -7,8 +7,8 @@ from toolbox import *
 from lvq import LVQ
 from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.compose import ColumnTransformer
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -43,6 +43,7 @@ print(df_fraud['type'].value_counts())
 
 # df = pd.get_dummies(df, columns=["type"]) # one hot encoding for the 'type' column
 
+
 le = LabelEncoder()
 df['type'] = le.fit_transform(df['type'])
 
@@ -66,19 +67,32 @@ print(df_resampled['isFraud'].value_counts())
 
 # so upsampling of the data is done using SMOTE
 
-# applying logistic regression
-X_train, X_test, y_train, y_test = train_test_split(X_resampled, y_resampled, test_size=0.3, shuffle=True)
+categorical_features = ['type']
+numeric_features = ['amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
 
+ohe = OneHotEncoder(sparse=False)
 scaler = StandardScaler()
-scaler.fit(X_resampled)
-X_train_scaled = scaler.transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+ct = ColumnTransformer([
+    ('ohe', ohe, categorical_features),
+    ('scaler', scaler, numeric_features)
+], remainder='passthrough')
+
+
+X_scaled = ct.fit_transform(X_resampled)
+
+# applying logistic regression
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_resampled, test_size=0.2, shuffle=True)
+
+# scaler = StandardScaler()
+# scaler.fit(X_resampled)
+# X_train_scaled = scaler.transform(X_train)
+# X_test_scaled = scaler.transform(X_test)
 # Fit a logistic regression model
 lr = LogisticRegression(random_state=4)
-lr.fit(X_train_scaled, y_train)
+lr.fit(X_train, y_train)
 
 # Predict on the test set
-y_pred = lr.predict(X_test_scaled)
+y_pred = lr.predict(X_test)
 
 # Print the classification report and confusion matrix
 print('Results for logistic regression:')
@@ -92,10 +106,10 @@ print(cf)
 # # Recall: the ratio of true positives to the total number of actual positives.
 
 clf = DecisionTreeClassifier(random_state=4)
-clf.fit(X_train_scaled, y_train)
+clf.fit(X_train, y_train)
 
 # Make predictions on the testing set
-y_pred = clf.predict(X_test_scaled)
+y_pred = clf.predict(X_test)
 
 # Evaluate the performance of the model
 print('Results for Decision Tree:')
@@ -108,7 +122,7 @@ clf.fit(X_train, y_train)
 # Predict on the test set
 y_pred = clf.predict(X_test)
 
-k_values = list(range(1, 31))
+k_values = list(range(1, 15))
 
 precisions = []
 for k in k_values:
@@ -128,15 +142,15 @@ plt.show()
 print('Best precision using KNN when k = 2:', precisions[1])
 # we get the maximum precision at k=2
 knn = KNeighborsClassifier(n_neighbors=2)
-knn.fit(X_train_scaled, y_train)
-y_pred = knn.predict(X_test_scaled)
+knn.fit(X_train, y_train)
+y_pred = knn.predict(X_test)
 cm = confusion_matrix(y_test, y_pred)
 print(cm)
 
-
+print('LVQ RUNNING!')
 lv = LVQ(0.0001, 10)
-lv.fit(X_train_scaled, y_train)
-y_pred = lv.predict(X_test_scaled)
+lv.fit(X_train, y_train)
+y_pred = lv.predict(X_test)
 precision = lv.score(y_test, y_pred)
 
 print('LVQ classification:')
