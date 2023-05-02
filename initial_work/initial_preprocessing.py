@@ -1,6 +1,8 @@
 import pandas as pd
 
 df = pd.read_csv('credit_card_fraud.csv')
+# reading of this line will give error as the initial data file was very large
+# hence I could not upload it on GitHub.
 
 df_is_fraud = df[df['isFraud'] == 1]
 print(len(df_is_fraud))

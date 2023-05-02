@@ -73,6 +73,10 @@ df_resampled['isFraud'] = y_resampled
 print(df_resampled['isFraud'].value_counts())
 # 1    91787
 # 0    91787
+sns.countplot(x='isFraud', data=df_resampled)
+plt.title("After SMOTE")
+plt.tight_layout()
+plt.show()
 
 # so upsampling of the data is done using SMOTE
 
@@ -85,108 +89,284 @@ ct = ColumnTransformer([
     ('ohe', ohe, categorical_features),
     ('scaler', scaler, numeric_features)
 ], remainder='passthrough')
-
+# reference: chatgpt
 
 X_scaled = ct.fit_transform(X_resampled)
 
 # applying logistic regression
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_resampled, test_size=0.2, shuffle=True)
+X_train, X_test_val, y_train, y_test_val = train_test_split(X_scaled, y_resampled, test_size=0.3, random_state=4)
 
-# scaler = StandardScaler()
-# scaler.fit(X_resampled)
-# X_train_scaled = scaler.transform(X_train)
-# X_test_scaled = scaler.transform(X_test)
+X_val, X_test, y_val, y_test = train_test_split(X_test_val, y_test_val, test_size=0.5, random_state=4)
+# Splitting the dataset into train, validation, and test in ratio of 70:15:15
+
 # Fit a logistic regression model
 lr = LogisticRegression(random_state=4)
 lr.fit(X_train, y_train)
 
-# Predict on the test set
-y_pred = lr.predict(X_test)
-
-# Print the classification report and confusion matrix
-print('Results for logistic regression:')
-
-cm = confusion_matrix(y_test, y_pred)
+# Results on the train set
+y_pred_train = lr.predict(X_train)
+print('Results for logistic regression on train set:')
+cm = confusion_matrix(y_train, y_pred_train)
 print(cm)
-cf = classification_report(y_test, y_pred)
+cf = classification_report(y_train, y_pred_train)
 print(cf)
-auc_lr = roc_auc_score(y_test, y_pred)
-fpr, tpr, _ = roc_curve(y_test, y_pred)
+sns.heatmap(cm, annot=True)
+plt.title('Logistic regression on train set')
+plt.show()
+
+# Results on the validation set
+y_pred_val = lr.predict(X_val)
+print('Results for logistic regression on validation set:')
+cm = confusion_matrix(y_val, y_pred_val)
+print(cm)
+cf = classification_report(y_val, y_pred_val)
+print(cf)
+sns.heatmap(cm, annot=True)
+plt.title('Logistic regression on validation set')
+plt.show()
+
+# AUC Curves for train and validation sets
+auc_lr_train = roc_auc_score(y_train, y_pred_train)
+fpr_train, tpr_train, _ = roc_curve(y_train, y_pred_train)
+
+auc_lr_val = roc_auc_score(y_val, y_pred_val)
+fpr_val, tpr_val, _ = roc_curve(y_val, y_pred_val)
+
+plt.plot(fpr_val, tpr_val, label=f"Val set = {auc_lr_val:.2f}")
+plt.plot(fpr_train, tpr_train, label=f"Train set = {auc_lr_train:.2f}")
+plt.plot([0, 1], [0, 1], linestyle="--", color="grey")
+plt.title('Comparing Logistic Regression on train and validation')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend(loc="lower right")
+plt.show()
+
+
+# comparable results on both train set and validation set for logistic regression
+# and results are decent.
+
 
 
 # # Precision: the ratio of true positives to the total number of predicted positives.
 # # Recall: the ratio of true positives to the total number of actual positives.
 
-clf = DecisionTreeClassifier(random_state=4)
-clf.fit(X_train, y_train)
 
-
-y_pred = clf.predict(X_test)
-
-print('Results for Decision Tree:')
-print(confusion_matrix(y_test, y_pred))
-print(classification_report(y_test, y_pred))
+# applying decision tree
 
 clf = DecisionTreeClassifier(random_state=4)
 clf.fit(X_train, y_train)
 
+print('Results of decision tree on the train set:')
+y_pred_train = clf.predict(X_train)
+cm = confusion_matrix(y_train, y_pred_train)
+print(cm)
+cf = classification_report(y_train, y_pred_train)
+print(cf)
+sns.heatmap(cm, annot=True)
+plt.title('Decision Tree on train set')
+plt.show()
+
+print('Results of decision tree on the validation set:')
+y_pred_val = clf.predict(X_val)
+cm = confusion_matrix(y_val, y_pred_val)
+print(cm)
+cf = classification_report(y_val, y_pred_val)
+print(cf)
+sns.heatmap(cm, annot=True)
+plt.title('Decision Tree on validation set')
+plt.show()
+
+# AUC Curves for train and validation sets
+auc_dt_train = roc_auc_score(y_train, y_pred_train)
+fpr_train, tpr_train, _ = roc_curve(y_train, y_pred_train)
+
+auc_dt_val = roc_auc_score(y_val, y_pred_val)
+fpr_val, tpr_val, _ = roc_curve(y_val, y_pred_val)
+
+plt.plot(fpr_val, tpr_val, label=f"Val set = {auc_dt_val:.2f}")
+plt.plot(fpr_train, tpr_train, label=f"Train set = {auc_dt_train:.2f}")
+plt.plot([0, 1], [0, 1], linestyle="--", color="grey")
+plt.title('Comparing Decision Tree on train and validation')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend(loc="lower right")
+plt.show()
+
+
+# applying KNN
+
+k_values = list(range(1, 15))
+
+precisions = []
+for k in k_values:
+    knn = KNeighborsClassifier(n_neighbors=k)
+    knn.fit(X_train, y_train)
+    y_pred_val = knn.predict(X_val)
+    precision = precision_score(y_val, y_pred_val)
+    precisions.append(precision)
+
+# Plot the results
+plt.plot(k_values, precisions)
+plt.xlabel('k')
+plt.ylabel('Precision')
+plt.title('KNN Precision vs. k')
+plt.show()
+print('Best precision using KNN when k = 2:', precisions[1])
+# we get the maximum precision at k=2
+knn = KNeighborsClassifier(n_neighbors=2)
+knn.fit(X_train, y_train)
+
+print('Results of KNN on the train set:')
+y_pred_train = knn.predict(X_train)
+print(classification_report(y_train, y_pred_train))
+cm = confusion_matrix(y_train, y_pred_train)
+print(cm)
+sns.heatmap(cm, annot=True)
+plt.title('KNN (k=2) on train set')
+plt.show()
+
+print('Results of KNN on the validation set:')
+y_pred_val = knn.predict(X_val)
+print(classification_report(y_val, y_pred_val))
+cm = confusion_matrix(y_val, y_pred_val)
+print(cm)
+sns.heatmap(cm, annot=True)
+plt.title('KNN (k=2) on validation set')
+plt.show()
+
+
+# AUC Curves for train and validation sets
+auc_knn_train = roc_auc_score(y_train, y_pred_train)
+fpr_train, tpr_train, _ = roc_curve(y_train, y_pred_train)
+
+auc_knn_val = roc_auc_score(y_val, y_pred_val)
+fpr_val, tpr_val, _ = roc_curve(y_val, y_pred_val)
+
+plt.plot(fpr_val, tpr_val, label=f"Val set = {auc_knn_val:.2f}")
+plt.plot(fpr_train, tpr_train, label=f"Train set = {auc_knn_train:.2f}")
+plt.plot([0, 1], [0, 1], linestyle="--", color="grey")
+plt.title('Comparing KNN on train and validation')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend(loc="lower right")
+plt.show()
+
+# applying LVQ
+print('LVQ RUNNING!')
+lv = LVQ(0.0001, 5)
+lv.fit(X_train, y_train)
+y_pred_val = lv.predict(X_val)
+y_pred_train = lv.predict(X_train)
+# precision = lv.score(y_val, y_pred_val)
+
+print('LVQ classification on train set:')
+print(classification_report(y_train, y_pred_train))
+cm = confusion_matrix(y_train, y_pred_train)
+print(cm)
+sns.heatmap(cm, annot=True)
+plt.title('LVQ on train set')
+plt.show()
+
+print('LVQ classification on validation set:')
+print(classification_report(y_val, y_pred_val))
+cm = confusion_matrix(y_val, y_pred_val)
+print(cm)
+sns.heatmap(cm, annot=True)
+plt.title('LVQ on validation set')
+plt.show()
+
+# AUC Curves for train and validation sets
+auc_lvq_train = roc_auc_score(y_train, y_pred_train)
+fpr_train, tpr_train, _ = roc_curve(y_train, y_pred_train)
+
+auc_lvq_val = roc_auc_score(y_val, y_pred_val)
+fpr_val, tpr_val, _ = roc_curve(y_val, y_pred_val)
+
+plt.plot(fpr_val, tpr_val, label=f"Val set = {auc_lvq_val:.2f}")
+plt.plot(fpr_train, tpr_train, label=f"Train set = {auc_lvq_train:.2f}")
+plt.plot([0, 1], [0, 1], linestyle="--", color="grey")
+plt.title('Comparing LVQ on train and validation')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend(loc="lower right")
+plt.show()
+
+
+# Comparing all the models on the test set now.
+
+# LR
+y_pred = lr.predict(X_test)
+print('Results for logistic regression on validation set:')
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+cf = classification_report(y_test, y_pred)
+print(cf)
+sns.heatmap(cm, annot=True)
+plt.title('Logistic regression on test set')
+plt.show()
+
+# DT
+y_pred = clf.predict(X_test)
+print('Results for logistic regression on validation set:')
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+cf = classification_report(y_test, y_pred)
+print(cf)
+sns.heatmap(cm, annot=True)
+plt.title('Decision Tree on test set')
+plt.show()
+
+# KNN
+y_pred = knn.predict(X_test)
+print('Results for logistic regression on validation set:')
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+cf = classification_report(y_test, y_pred)
+print(cf)
+sns.heatmap(cm, annot=True)
+plt.title('Decision Tree on test set')
+plt.show()
+
+# LVQ
+y_pred = lv.predict(X_test)
+print('Results for logistic regression on validation set:')
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+cf = classification_report(y_test, y_pred)
+print(cf)
+sns.heatmap(cm, annot=True)
+plt.title('Decision Tree on test set')
+plt.show()
+
+
+
+# AUC curves for all models on test set
+y_pred = lv.predict(X_test)
+auc_lvq_test = roc_auc_score(y_test, y_pred)
+fpr_lvq, tpr_lvq, _ = roc_curve(y_test, y_pred)
+
+y_pred = lr.predict(X_test)
+auc_lr_test = roc_auc_score(y_test, y_pred)
+fpr_lr, tpr_lr, _ = roc_curve(y_test, y_pred)
 
 y_pred = clf.predict(X_test)
-auc_dt = roc_auc_score(y_test, y_pred)
-fpr2, tpr2, _ = roc_curve(y_test, y_pred)
+auc_dt_test = roc_auc_score(y_test, y_pred)
+fpr_dt, tpr_dt, _ = roc_curve(y_test, y_pred)
+
+y_pred = knn.predict(X_test)
+auc_knn_test = roc_auc_score(y_test, y_pred)
+fpr_knn, tpr_knn, _ = roc_curve(y_test, y_pred)
+
+plt.plot(fpr_lvq, tpr_lvq, label=f"LVQ = {auc_lvq_val:.2f}")
+plt.plot(fpr_lr, tpr_lr, label=f"LR  = {auc_lr_test:.2f}")
+plt.plot(fpr_dt, tpr_dt, label=f"DT = {auc_dt_test:.2f}")
+plt.plot(fpr_knn, tpr_knn, label=f"KNN = {auc_knn_test:.2f}")
+plt.plot([0, 1], [0, 1], linestyle="--", color="grey")
+plt.title('Comparing all models on test set')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend(loc="lower right")
+plt.show()
 
 
-# k_values = list(range(1, 15))
-#
-# precisions = []
-# for k in k_values:
-#     knn = KNeighborsClassifier(n_neighbors=k)
-#     knn.fit(X_train, y_train)
-#     y_pred = knn.predict(X_test)
-#     precision = precision_score(y_test, y_pred)
-#     precisions.append(precision)
-#
-# # Plot the results
-# print('KNN Results:')
-# plt.plot(k_values, precisions)
-# plt.xlabel('k')
-# plt.ylabel('Precision')
-# plt.title('KNN Precision vs. k')
-# plt.show()
-# print('Best precision using KNN when k = 2:', precisions[1])
-# # we get the maximum precision at k=2
-# knn = KNeighborsClassifier(n_neighbors=2)
-# knn.fit(X_train, y_train)
-# y_pred = knn.predict(X_test)
-# cm = confusion_matrix(y_test, y_pred)
-# print(cm)
-#
-# auc_knn = roc_auc_score(y_test, y_pred)
-# fpr3, tpr3, _ = roc_curve(y_test, y_pred)
-#
-#
-# print('LVQ RUNNING!')
-# lv = LVQ(0.0001, 20)
-# lv.fit(X_train, y_train)
-# y_pred = lv.predict(X_test)
-# precision = lv.score(y_test, y_pred)
-#
-# print('LVQ classification:')
-# print(classification_report(y_test, y_pred))
-#
-# cm = confusion_matrix(y_test, y_pred)
-# print(cm)
-#
-# auc_lvq = roc_auc_score(y_test, y_pred)
-# fpr4, tpr4, _ = roc_curve(y_test, y_pred)
-#
-# plt.plot(fpr4, tpr4, label=f"LVQ = {auc_lvq:.2f}")
-# plt.plot(fpr3, tpr3, label=f"KNN = {auc_knn:.2f}")
-# plt.plot(fpr2, tpr2, label=f"DT = {auc_dt:.2f}")
-# plt.plot(fpr, tpr, label=f"LR = {auc_lr:.2f}")
-# plt.plot([0, 1], [0, 1], linestyle="--", color="grey")
-# plt.title('Comparing performances of different models')
-# plt.xlabel("False Positive Rate")
-# plt.ylabel("True Positive Rate")
-# plt.legend(loc="lower right")
-# plt.show()
+

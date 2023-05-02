@@ -54,7 +54,7 @@ class LVQ(object):
     def __init__(self, alpha=0.01, epochs=20):
         self.alpha = alpha
         self.epochs = epochs
-        # w2 = [[1, 0, 0],
+        # w2 = [[1, 0, 0], # need to uncomment this for iris dataset
         #       [0, 1, 0],
         #       [0, 0, 1]]
         w2 = [[1, 0],
@@ -67,7 +67,7 @@ class LVQ(object):
     def fit(self, X, y):
         y = pd.Series(y)
         X = np.array(X)
-        self.w1 = np.random.rand(2, len(X[0, :]))
+        self.w1 = np.random.rand(self.w2.shape[0], len(X[0, :]))
         for epoch in range(self.epochs):
             print('epoch = ', epoch+1)
             for i in range(len(X)):
