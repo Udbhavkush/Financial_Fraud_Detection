@@ -1,6 +1,7 @@
 # ML_Final_Term_Project
 
 INTRODUCTION
+
 Credit card fraud happens when someone (mostly a fraudster) uses the stolen credit card or the credit card information to make unauthorized purchases. The reason I chose this topic is that this problem is real and so many people are getting scammed because of credit card fraudulent activities. I am going to use Synthetic Financial Dataset for Fraud Detection.
 
 Link for the dataset: https://www.kaggle.com/datasets/ealaxi/paysim1.
