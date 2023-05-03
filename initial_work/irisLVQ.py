@@ -4,7 +4,7 @@ import seaborn as sns
 from sklearn.model_selection import train_test_split
 from toolbox import *
 from lvq import LVQ
-from sklearn.metrics import classification_report, confusion_matrix, precision_score
+from sklearn.metrics import classification_report, confusion_matrix
 
 iris = load_iris()
 X = iris.data

@@ -46,12 +46,9 @@ sns.countplot(x="type", hue='isFraud', data=df)
 plt.title("histogram of different types with frequency of fraudulent activities")
 plt.tight_layout()
 plt.show()
-# df = pd.get_dummies(df, columns=["type"]) # one hot encoding for the 'type' column
-
 
 le = LabelEncoder()
 df['type'] = le.fit_transform(df['type'])
-
 
 X = df.drop(columns=["isFraud"])
 y = df["isFraud"]
@@ -60,25 +57,6 @@ sns.countplot(x='isFraud', data=df)
 plt.title("An estimate of Imbalance in the dataset")
 plt.tight_layout()
 plt.show()
-# Instantiate SMOTE
-smote = SMOTE(random_state=4)
-# reference: https://imbalanced-learn.org/stable/references/generated/imblearn.over_sampling.SMOTE.html#imblearn.over_sampling.SMOTE.fit_resample
-
-# Upsample the minority class
-X_resampled, y_resampled = smote.fit_resample(X, y)
-
-
-df_resampled = X_resampled.copy()
-df_resampled['isFraud'] = y_resampled
-print(df_resampled['isFraud'].value_counts())
-# 1    91787
-# 0    91787
-sns.countplot(x='isFraud', data=df_resampled)
-plt.title("After SMOTE")
-plt.tight_layout()
-plt.show()
-
-# so upsampling of the data is done using SMOTE
 
 categorical_features = ['type']
 numeric_features = ['amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']
@@ -91,13 +69,21 @@ ct = ColumnTransformer([
 ], remainder='passthrough')
 # reference: chatgpt
 
-X_scaled = ct.fit_transform(X_resampled)
+X_scaled = ct.fit_transform(X)
 
 # applying logistic regression
-X_train, X_test_val, y_train, y_test_val = train_test_split(X_scaled, y_resampled, test_size=0.3, random_state=4)
+X_train1, X_test_val, y_train1, y_test_val = train_test_split(X_scaled, y, test_size=0.3, random_state=4)
 
 X_val, X_test, y_val, y_test = train_test_split(X_test_val, y_test_val, test_size=0.5, random_state=4)
 # Splitting the dataset into train, validation, and test in ratio of 70:15:15
+
+# Instantiate SMOTE
+smote = SMOTE(random_state=4)
+# reference: https://imbalanced-learn.org/stable/references/generated/imblearn.over_sampling.SMOTE.html#imblearn.over_sampling.SMOTE.fit_resample
+
+# Upsample the minority class of train set
+X_train, y_train = smote.fit_resample(X_train1, y_train1)
+
 
 # Fit a logistic regression model
 lr = LogisticRegression(random_state=4)
@@ -125,7 +111,7 @@ sns.heatmap(cm, annot=True)
 plt.title('Logistic regression on validation set')
 plt.show()
 
-# AUC Curves for train and validation sets
+# AUC Curves for train and validation sets of logistic regression
 auc_lr_train = roc_auc_score(y_train, y_pred_train)
 fpr_train, tpr_train, _ = roc_curve(y_train, y_pred_train)
 
@@ -145,14 +131,11 @@ plt.show()
 # comparable results on both train set and validation set for logistic regression
 # and results are decent.
 
-
-
-# # Precision: the ratio of true positives to the total number of predicted positives.
-# # Recall: the ratio of true positives to the total number of actual positives.
+# Precision: the ratio of true positives to the total number of predicted positives.
+# Recall: the ratio of true positives to the total number of actual positives.
 
 
 # applying decision tree
-
 clf = DecisionTreeClassifier(random_state=4)
 clf.fit(X_train, y_train)
 
@@ -253,7 +236,7 @@ plt.show()
 
 # applying LVQ
 print('LVQ RUNNING!')
-lv = LVQ(0.0001, 5)
+lv = LVQ(0.00001, 20)
 lv.fit(X_train, y_train)
 y_pred_val = lv.predict(X_val)
 y_pred_train = lv.predict(X_train)
@@ -296,7 +279,7 @@ plt.show()
 
 # LR
 y_pred = lr.predict(X_test)
-print('Results for logistic regression on validation set:')
+print('Results for logistic regression on test set:')
 cm = confusion_matrix(y_test, y_pred)
 print(cm)
 cf = classification_report(y_test, y_pred)
@@ -307,7 +290,7 @@ plt.show()
 
 # DT
 y_pred = clf.predict(X_test)
-print('Results for logistic regression on validation set:')
+print('Results for decision tree on test set:')
 cm = confusion_matrix(y_test, y_pred)
 print(cm)
 cf = classification_report(y_test, y_pred)
@@ -318,26 +301,25 @@ plt.show()
 
 # KNN
 y_pred = knn.predict(X_test)
-print('Results for logistic regression on validation set:')
+print('Results for KNN on test set:')
 cm = confusion_matrix(y_test, y_pred)
 print(cm)
 cf = classification_report(y_test, y_pred)
 print(cf)
 sns.heatmap(cm, annot=True)
-plt.title('Decision Tree on test set')
+plt.title('KNN on test set')
 plt.show()
 
 # LVQ
 y_pred = lv.predict(X_test)
-print('Results for logistic regression on validation set:')
+print('Results for LVQ on test set:')
 cm = confusion_matrix(y_test, y_pred)
 print(cm)
 cf = classification_report(y_test, y_pred)
 print(cf)
 sns.heatmap(cm, annot=True)
-plt.title('Decision Tree on test set')
+plt.title('LVQ on test set')
 plt.show()
-
 
 
 # AUC curves for all models on test set
@@ -369,4 +351,75 @@ plt.legend(loc="lower right")
 plt.show()
 
 
+# applying LVQ on the non standardized dataset
 
+X_train1, X_test_val, y_train1, y_test_val = train_test_split(X, y, test_size=0.3, random_state=4)
+
+X_val, X_test, y_val, y_test = train_test_split(X_test_val, y_test_val, test_size=0.5, random_state=4)
+
+smote = SMOTE(random_state=4)
+
+# Upsample the minority class of train set
+X_train, y_train = smote.fit_resample(X_train1, y_train1)
+
+# applying LVQ
+#
+lv = LVQ(0.00001, 20)
+lv.fit(X_train, y_train)
+y_pred_val = lv.predict(X_val)
+y_pred_train = lv.predict(X_train)
+# precision = lv.score(y_val, y_pred_val)
+
+print('LVQ classification on train set:')
+print(classification_report(y_train, y_pred_train))
+cm = confusion_matrix(y_train, y_pred_train)
+print(cm)
+sns.heatmap(cm, annot=True)
+plt.title('LVQ on train set')
+plt.show()
+
+print('LVQ classification on validation set:')
+print(classification_report(y_val, y_pred_val))
+cm = confusion_matrix(y_val, y_pred_val)
+print(cm)
+sns.heatmap(cm, annot=True)
+plt.title('LVQ on validation set')
+plt.show()
+
+# AUC Curves for train and validation sets
+auc_lvq_train = roc_auc_score(y_train, y_pred_train)
+fpr_train, tpr_train, _ = roc_curve(y_train, y_pred_train)
+
+auc_lvq_val = roc_auc_score(y_val, y_pred_val)
+fpr_val, tpr_val, _ = roc_curve(y_val, y_pred_val)
+
+plt.plot(fpr_val, tpr_val, label=f"Val set = {auc_lvq_val:.2f}")
+plt.plot(fpr_train, tpr_train, label=f"Train set = {auc_lvq_train:.2f}")
+plt.plot([0, 1], [0, 1], linestyle="--", color="grey")
+plt.title('Comparing LVQ on train and validation non standardized')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend(loc="lower right")
+plt.show()
+
+# LVQ
+y_pred = lv.predict(X_test)
+print('Results for LVQ on test set non standardized:')
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+cf = classification_report(y_test, y_pred)
+print(cf)
+sns.heatmap(cm, annot=True)
+plt.title('LVQ on test set')
+plt.show()
+
+auc_lvq_val = roc_auc_score(y_test, y_pred)
+fpr_val, tpr_val, _ = roc_curve(y_test, y_pred)
+
+plt.plot(fpr_val, tpr_val, label=f"Val set = {auc_lvq_val:.2f}")
+plt.plot([0, 1], [0, 1], linestyle="--", color="grey")
+plt.title('LVQ on Test set non standardized')
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend(loc="lower right")
+plt.show()
