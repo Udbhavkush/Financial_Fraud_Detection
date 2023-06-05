@@ -1,4 +1,4 @@
-# ML_Final_Term_Project
+# Financial Fraud Detection
 
 INTRODUCTION
 
