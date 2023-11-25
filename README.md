@@ -31,6 +31,8 @@ Presentation-and-proposal contains the project presentation and project proposal
 
 initial_work folder contains all the code files relevant to the project + preprocessing.py file which was developed to sample 100k values from the original dataset.
 
+P.S. Please refer to the medium article to know more about the LVQ algorithm.
 
+Link: https://medium.com/@udbhavkush4/demystifying-learning-vector-quantization-a-step-by-step-guide-with-code-implementation-from-ea3c4ab5330e
 
 
