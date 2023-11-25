@@ -9,11 +9,11 @@ class LVQ(object):
     def __init__(self, alpha=0.01, epochs=20):
         self.alpha = alpha
         self.epochs = epochs
-        # w2 = [[1, 0, 0], # need to uncomment this for iris dataset
-        #       [0, 1, 0],
-        #       [0, 0, 1]]
-        w2 = [[1, 0],
-              [0, 1]]
+        w2 = [[1, 0, 0], # need to uncomment this for iris dataset
+              [0, 1, 0],
+              [0, 0, 1]]
+        # w2 = [[1, 0],
+        #       [0, 1]]
 
         self.w2 = np.array(w2)
         # for trying, I am taking just two neurons in the first layer
